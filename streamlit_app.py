@@ -7,10 +7,10 @@ import pandas as pd
 # -------------------------
 # CONFIG
 # -------------------------
-st.set_page_config(page_title="AI Habit System", layout="wide")
+st.set_page_config(page_title="AI Habit System", layout="centered")
 
 # -------------------------
-# 🎨 ESTILO PRO
+# 🎨 ESTILO RESPONSIVE (ARREGLADO)
 # -------------------------
 st.markdown("""
 <style>
@@ -26,34 +26,21 @@ st.markdown("""
     background-color: #0e1117;
 }
 
-/* TARJETAS */
+/* TARJETAS (SIN ANIMACIONES QUE ROMPEN MÓVIL) */
 .card {
     background: #1c1f26;
-    padding: 20px;
-    border-radius: 14px;
-    margin-bottom: 15px;
-    box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
-    transition: transform 0.2s ease;
-}
-
-.card:hover {
-    transform: scale(1.02);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
 }
 
 /* MÉTRICAS */
 .metric {
     text-align: center;
-    padding: 15px;
-    border-radius: 12px;
+    padding: 10px;
+    border-radius: 10px;
     background: #1c1f26;
-    font-size: 18px;
-    box-shadow: 0px 2px 10px rgba(0,0,0,0.2);
-}
-
-/* TITULO */
-.title {
-    font-size: 36px;
-    font-weight: bold;
+    font-size: 16px;
 }
 
 /* TEXTO */
@@ -73,28 +60,6 @@ genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 HISTORY_FILE = "habitos_log.json"
-
-# -------------------------
-# 🧠 ONBOARDING
-# -------------------------
-if "onboarding_done" not in st.session_state:
-    st.session_state.onboarding_done = False
-
-if not st.session_state.onboarding_done:
-    st.markdown("## 👋 Bienvenido a AI Habit System")
-    st.markdown("""
-    Este sistema te ayudará a:
-    
-    - Analizar tu día  
-    - Mejorar tu disciplina  
-    - Crear consistencia  
-    
-    👉 Escribe tu día y recibe feedback inmediato.
-    """)
-    if st.button("Empezar"):
-        st.session_state.onboarding_done = True
-        st.rerun()
-    st.stop()
 
 # -------------------------
 # FUNCIONES
@@ -184,10 +149,9 @@ HOY:
     return json.loads(response.text)
 
 # -------------------------
-# UI PRINCIPAL
+# UI
 # -------------------------
-
-st.markdown('<div class="title">🧠 AI Habit Dashboard</div>', unsafe_allow_html=True)
+st.title("🧠 AI Habit System")
 
 modo = st.selectbox("🎛️ Modo", ["Suave", "Estándar", "Hardcore"])
 
@@ -206,27 +170,20 @@ if st.button("🚀 Analizar"):
 
         tipo, mensaje = evaluar_consecuencia(score, media, racha, modo)
 
-        # DASHBOARD
-        col1, col2, col3 = st.columns(3)
+        # MÉTRICAS (SOLO 2 COLUMNAS → MOBILE SAFE)
+        col1, col2 = st.columns(2)
         col1.markdown(f'<div class="metric">🔥 Score<br><b>{score}</b></div>', unsafe_allow_html=True)
         col2.markdown(f'<div class="metric">⚡ Racha<br><b>{racha}</b></div>', unsafe_allow_html=True)
-        col3.markdown(f'<div class="metric">📊 Media<br><b>{round(media,2)}</b></div>', unsafe_allow_html=True)
 
         st.divider()
 
         # TARJETAS
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown(f'<div class="card">⚠️ <b>Error</b><br>{resultado.get("error_principal")}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="card">📜 <b>Regla</b><br>{resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
-
-        with col2:
-            st.markdown(f'<div class="card">✅ <b>Acción</b><br>{resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="card">🎯 <b>Objetivo</b><br>{resultado.get("objetivo_manana")}</div>', unsafe_allow_html=True)
-
-        st.markdown(f'<div class="card">🧬 <b>Identidad</b><br>{resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📉 <b>Evaluación semanal</b><br>{resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">⚠️ <b>Error:</b><br>{resultado.get("error_principal")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">📜 <b>Regla:</b><br>{resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">✅ <b>Acción:</b><br>{resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">🎯 <b>Objetivo:</b><br>{resultado.get("objetivo_manana")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">🧬 <b>Identidad:</b><br>{resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">📉 <b>Evaluación semanal:</b><br>{resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
 
         # CONSECUENCIA
         if tipo == "error":
