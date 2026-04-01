@@ -7,57 +7,60 @@ import pandas as pd
 # -------------------------
 # CONFIG
 # -------------------------
-st.set_page_config(page_title="AI Habit System", layout="centered")
+st.set_page_config(page_title="AI Habit System", layout="wide")
 
 # -------------------------
-# 🎨 ESTILO RESPONSIVE (ARREGLADO)
+# 🎨 DISEÑO PRO
 # -------------------------
 st.markdown("""
 <style>
 
-/* FONDO */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #0e1117, #111827);
+    background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
 }
 
-/* SIDEBAR */
-[data-testid="stSidebar"] {
-    background-color: #0e1117;
-}
-
-/* TARJETAS (SIN ANIMACIONES QUE ROMPEN MÓVIL) */
-.card {
-    background: #1c1f26;
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-}
-
-/* MÉTRICAS */
-.metric {
+h1 {
     text-align: center;
-    padding: 10px;
-    border-radius: 10px;
-    background: #1c1f26;
-    font-size: 16px;
+    font-size: 40px;
 }
 
-/* TEXTO */
-h1, h2, h3, h4, h5, h6, p, span, div {
+.card {
+    background: #111827;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 15px;
+}
+
+.metric {
+    background: #020617;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 18px;
+}
+
+textarea {
+    background-color: #020617 !important;
     color: white !important;
+}
+
+button {
+    background-color: #2563eb !important;
+    color: white !important;
+    border-radius: 10px !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# 🔐 API
+# API
 # -------------------------
 API_KEY = st.secrets.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash')  # de momento dejamos este
 
 HISTORY_FILE = "habitos_log.json"
 
@@ -97,32 +100,15 @@ def media_ultimos_dias(n=7):
     return sum(scores) / len(scores)
 
 # -------------------------
-# CONSECUENCIAS
-# -------------------------
-def evaluar_consecuencia(score, media, racha, modo):
-    if modo == "Suave":
-        return "info", "Sigue mejorando poco a poco."
-    elif modo == "Estándar":
-        if score < media:
-            return "warning", "Estás por debajo de tu media."
-        else:
-            return "info", "Mantén el foco."
-    else:
-        if score < 5:
-            return "error", "CASTIGO: elimina distracciones mañana."
-        elif score >= 8:
-            return "success", "RECOMPENSA: 1h de ocio."
-        else:
-            return "warning", "Podrías hacerlo mejor."
-
-# -------------------------
 # IA
 # -------------------------
 def analizar(diario):
     historial = obtener_historial()
 
     prompt = f"""
-Analiza este día y devuelve JSON:
+Eres un coach de alto rendimiento.
+
+Analiza el día del usuario:
 
 HISTORIAL:
 {historial}
@@ -130,14 +116,16 @@ HISTORIAL:
 HOY:
 {diario}
 
+Devuelve JSON:
+
 {{
  "productividad_nivel": número 1-10,
- "error_principal": texto,
- "accion_obligatoria_manana": texto,
- "objetivo_manana": texto,
- "analisis_semanal": texto,
- "identidad_actual": texto,
- "regla_clave": texto
+ "error_principal": texto claro y directo,
+ "accion_obligatoria_manana": acción concreta,
+ "objetivo_manana": objetivo claro,
+ "analisis_semanal": patrones detectados,
+ "identidad_actual": cómo se está comportando,
+ "regla_clave": regla simple que debe seguir
 }}
 """
 
@@ -153,11 +141,13 @@ HOY:
 # -------------------------
 st.title("🧠 AI Habit System")
 
-modo = st.selectbox("🎛️ Modo", ["Suave", "Estándar", "Hardcore"])
+st.markdown("### Mejora tu disciplina. Detecta patrones. Construye consistencia.")
 
-diario = st.text_area("✍️ Describe tu día")
+modo = st.selectbox("Selecciona tu modo", ["Suave", "Estándar", "Disciplina avanzada"])
 
-if st.button("🚀 Analizar"):
+diario = st.text_area("Describe tu día:")
+
+if st.button("Analizar día"):
 
     if diario:
         resultado = analizar(diario)
@@ -166,43 +156,28 @@ if st.button("🚀 Analizar"):
 
         score = resultado.get("productividad_nivel", 0)
         racha = calcular_racha()
-        media = media_ultimos_dias()
 
-        tipo, mensaje = evaluar_consecuencia(score, media, racha, modo)
-
-        # MÉTRICAS (SOLO 2 COLUMNAS → MOBILE SAFE)
         col1, col2 = st.columns(2)
         col1.markdown(f'<div class="metric">🔥 Score<br><b>{score}</b></div>', unsafe_allow_html=True)
         col2.markdown(f'<div class="metric">⚡ Racha<br><b>{racha}</b></div>', unsafe_allow_html=True)
 
         st.divider()
 
-        # TARJETAS
-        st.markdown(f'<div class="card">⚠️ <b>Error:</b><br>{resultado.get("error_principal")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📜 <b>Regla:</b><br>{resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">✅ <b>Acción:</b><br>{resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">⚠️ <b>Error principal:</b><br>{resultado.get("error_principal")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">📜 <b>Regla clave:</b><br>{resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">✅ <b>Acción obligatoria:</b><br>{resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="card">🎯 <b>Objetivo:</b><br>{resultado.get("objetivo_manana")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">🧬 <b>Identidad:</b><br>{resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📉 <b>Evaluación semanal:</b><br>{resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
-
-        # CONSECUENCIA
-        if tipo == "error":
-            st.error(mensaje)
-        elif tipo == "warning":
-            st.warning(mensaje)
-        elif tipo == "success":
-            st.success(mensaje)
-        else:
-            st.info(mensaje)
+        st.markdown(f'<div class="card">🧬 <b>Identidad actual:</b><br>{resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card">📉 <b>Análisis:</b><br>{resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
 
 # -------------------------
 # EXTRA
 # -------------------------
-if st.checkbox("📈 Ver progreso"):
+if st.checkbox("Ver progreso"):
     data = obtener_historial()
     if data:
         df = pd.DataFrame(data).T
         st.line_chart(df["productividad_nivel"])
 
-if st.checkbox("📂 Ver historial"):
+if st.checkbox("Ver historial"):
     st.json(obtener_historial())
