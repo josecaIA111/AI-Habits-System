@@ -10,7 +10,7 @@ import pandas as pd
 st.set_page_config(page_title="AI Habit System", layout="wide")
 
 # -------------------------
-# 🎨 DISEÑO PRO
+# 🎨 DISEÑO PRO (VISUAL TOP)
 # -------------------------
 st.markdown("""
 <style>
@@ -20,35 +20,54 @@ st.markdown("""
     color: white;
 }
 
+/* TITULO */
 h1 {
     text-align: center;
-    font-size: 40px;
+    font-size: 42px;
+    font-weight: 700;
 }
 
+/* SUBTITULO */
+.subtitle {
+    text-align: center;
+    font-size: 18px;
+    opacity: 0.7;
+    margin-bottom: 20px;
+}
+
+/* TARJETAS */
 .card {
     background: #111827;
     padding: 20px;
-    border-radius: 15px;
+    border-radius: 16px;
     margin-bottom: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
 }
 
+/* MÉTRICAS */
 .metric {
     background: #020617;
-    padding: 20px;
-    border-radius: 12px;
+    padding: 25px;
+    border-radius: 14px;
     text-align: center;
     font-size: 18px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.4);
 }
 
+/* TEXTAREA */
 textarea {
     background-color: #020617 !important;
     color: white !important;
+    border-radius: 10px !important;
 }
 
+/* BOTÓN */
 button {
-    background-color: #2563eb !important;
+    background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
     color: white !important;
-    border-radius: 10px !important;
+    border-radius: 12px !important;
+    height: 45px;
+    font-size: 16px;
 }
 
 </style>
@@ -60,7 +79,8 @@ button {
 API_KEY = st.secrets.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-model = genai.GenerativeModel('gemini-1.5-flash')  # de momento dejamos este
+# ✅ MODELO ARREGLADO
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 HISTORY_FILE = "habitos_log.json"
 
@@ -106,7 +126,7 @@ def analizar(diario):
     historial = obtener_historial()
 
     prompt = f"""
-Eres un coach de alto rendimiento.
+Eres un coach de alto rendimiento, directo y claro.
 
 Analiza el día del usuario:
 
@@ -120,12 +140,12 @@ Devuelve JSON:
 
 {{
  "productividad_nivel": número 1-10,
- "error_principal": texto claro y directo,
- "accion_obligatoria_manana": acción concreta,
- "objetivo_manana": objetivo claro,
- "analisis_semanal": patrones detectados,
- "identidad_actual": cómo se está comportando,
- "regla_clave": regla simple que debe seguir
+ "error_principal": directo,
+ "accion_obligatoria_manana": concreta,
+ "objetivo_manana": claro,
+ "analisis_semanal": patrones,
+ "identidad_actual": comportamiento actual,
+ "regla_clave": regla simple
 }}
 """
 
@@ -140,14 +160,13 @@ Devuelve JSON:
 # UI
 # -------------------------
 st.title("🧠 AI Habit System")
+st.markdown('<div class="subtitle">Analiza tu día. Mejora tu disciplina. Construye consistencia.</div>', unsafe_allow_html=True)
 
-st.markdown("### Mejora tu disciplina. Detecta patrones. Construye consistencia.")
+modo = st.selectbox("🎛️ Modo", ["Suave", "Estándar", "Disciplina avanzada"])
 
-modo = st.selectbox("Selecciona tu modo", ["Suave", "Estándar", "Disciplina avanzada"])
+diario = st.text_area("✍️ Describe tu día")
 
-diario = st.text_area("Describe tu día:")
-
-if st.button("Analizar día"):
+if st.button("🚀 Analizar día"):
 
     if diario:
         resultado = analizar(diario)
@@ -173,11 +192,11 @@ if st.button("Analizar día"):
 # -------------------------
 # EXTRA
 # -------------------------
-if st.checkbox("Ver progreso"):
+if st.checkbox("📈 Ver progreso"):
     data = obtener_historial()
     if data:
         df = pd.DataFrame(data).T
         st.line_chart(df["productividad_nivel"])
 
-if st.checkbox("Ver historial"):
+if st.checkbox("📂 Ver historial"):
     st.json(obtener_historial())
