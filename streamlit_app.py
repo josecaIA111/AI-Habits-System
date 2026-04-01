@@ -1,8 +1,8 @@
 import streamlit as st
-import google.generativeai as genai
 import datetime
 import json
 import pandas as pd
+import requests
 
 # -------------------------
 # CONFIG
@@ -10,83 +10,48 @@ import pandas as pd
 st.set_page_config(page_title="AI Habit System", layout="wide")
 
 # -------------------------
-# 🎨 DISEÑO PRO (VISUAL TOP)
+# 🎨 DISEÑO PRO
 # -------------------------
 st.markdown("""
 <style>
-
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
 }
-
-/* TITULO */
-h1 {
-    text-align: center;
-    font-size: 42px;
-    font-weight: 700;
-}
-
-/* SUBTITULO */
-.subtitle {
-    text-align: center;
-    font-size: 18px;
-    opacity: 0.7;
-    margin-bottom: 20px;
-}
-
-/* TARJETAS */
+h1 { text-align: center; font-size: 42px; }
 .card {
     background: #111827;
     padding: 20px;
     border-radius: 16px;
     margin-bottom: 15px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
 }
-
-/* MÉTRICAS */
 .metric {
     background: #020617;
     padding: 25px;
     border-radius: 14px;
     text-align: center;
-    font-size: 18px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.4);
 }
-
-/* TEXTAREA */
 textarea {
     background-color: #020617 !important;
     color: white !important;
-    border-radius: 10px !important;
 }
-
-/* BOTÓN */
 button {
     background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
     color: white !important;
-    border-radius: 12px !important;
-    height: 45px;
-    font-size: 16px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# API
+# API KEY
 # -------------------------
 API_KEY = st.secrets.get("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
 
-# ✅ MODELO ARREGLADO
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
-
+# -------------------------
+# HISTORIAL
+# -------------------------
 HISTORY_FILE = "habitos_log.json"
 
-# -------------------------
-# FUNCIONES
-# -------------------------
 def obtener_historial():
     try:
         with open(HISTORY_FILE, 'r') as f:
@@ -111,29 +76,16 @@ def calcular_racha():
             break
     return racha
 
-def media_ultimos_dias(n=7):
-    data = obtener_historial()
-    valores = list(data.values())[-n:]
-    if not valores:
-        return 0
-    scores = [v.get("productividad_nivel", 0) for v in valores]
-    return sum(scores) / len(scores)
-
 # -------------------------
-# IA
+# IA (REST API)
 # -------------------------
 def analizar(diario):
-    historial = obtener_historial()
 
     prompt = f"""
-Eres un coach de alto rendimiento, directo y claro.
+Eres un coach de alto rendimiento.
 
-Analiza el día del usuario:
+Analiza el día:
 
-HISTORIAL:
-{historial}
-
-HOY:
 {diario}
 
 Devuelve JSON:
@@ -149,24 +101,41 @@ Devuelve JSON:
 }}
 """
 
-    response = model.generate_content(
-        prompt,
-        generation_config={"response_mime_type": "application/json"}
-    )
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
 
-    return json.loads(response.text)
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt}]
+        }]
+    }
+
+    response = requests.post(url, json=payload)
+
+    result = response.json()
+
+    try:
+        text = result["candidates"][0]["content"]["parts"][0]["text"]
+        return json.loads(text)
+    except:
+        return {
+            "productividad_nivel": 5,
+            "error_principal": "Error interpretando respuesta",
+            "accion_obligatoria_manana": "Reintentar",
+            "objetivo_manana": "Ser consistente",
+            "analisis_semanal": "",
+            "identidad_actual": "",
+            "regla_clave": ""
+        }
 
 # -------------------------
 # UI
 # -------------------------
 st.title("🧠 AI Habit System")
-st.markdown('<div class="subtitle">Analiza tu día. Mejora tu disciplina. Construye consistencia.</div>', unsafe_allow_html=True)
+st.write("Analiza tu día. Mejora tu disciplina.")
 
-modo = st.selectbox("🎛️ Modo", ["Suave", "Estándar", "Disciplina avanzada"])
+diario = st.text_area("Describe tu día")
 
-diario = st.text_area("✍️ Describe tu día")
-
-if st.button("🚀 Analizar día"):
+if st.button("Analizar"):
 
     if diario:
         resultado = analizar(diario)
@@ -177,26 +146,13 @@ if st.button("🚀 Analizar día"):
         racha = calcular_racha()
 
         col1, col2 = st.columns(2)
-        col1.markdown(f'<div class="metric">🔥 Score<br><b>{score}</b></div>', unsafe_allow_html=True)
-        col2.markdown(f'<div class="metric">⚡ Racha<br><b>{racha}</b></div>', unsafe_allow_html=True)
+        col1.metric("Score", score)
+        col2.metric("Racha", racha)
 
-        st.divider()
-
-        st.markdown(f'<div class="card">⚠️ <b>Error principal:</b><br>{resultado.get("error_principal")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📜 <b>Regla clave:</b><br>{resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">✅ <b>Acción obligatoria:</b><br>{resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">🎯 <b>Objetivo:</b><br>{resultado.get("objetivo_manana")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">🧬 <b>Identidad actual:</b><br>{resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📉 <b>Análisis:</b><br>{resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
+        st.write(resultado)
 
 # -------------------------
 # EXTRA
 # -------------------------
-if st.checkbox("📈 Ver progreso"):
-    data = obtener_historial()
-    if data:
-        df = pd.DataFrame(data).T
-        st.line_chart(df["productividad_nivel"])
-
-if st.checkbox("📂 Ver historial"):
+if st.checkbox("Ver historial"):
     st.json(obtener_historial())
