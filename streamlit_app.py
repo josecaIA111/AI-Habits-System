@@ -1,7 +1,6 @@
 import streamlit as st
 import datetime
 import json
-import pandas as pd
 import requests
 
 # -------------------------
@@ -17,9 +16,6 @@ st.markdown("""
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
-}
-h1 {
-    text-align: center;
 }
 .card {
     background: #111827;
@@ -56,10 +52,16 @@ def guardar_log(fecha, datos):
 # -------------------------
 # IA
 # -------------------------
-def analizar(diario, objetivo):
+def analizar(diario, objetivo, modo):
+
+    tono = {
+        "Suave": "amable y motivador",
+        "Estándar": "directo y útil",
+        "Disciplina avanzada": "duro, exigente y sin excusas"
+    }
 
     prompt = f"""
-Eres un coach de alto rendimiento, directo, honesto y práctico.
+Eres un coach de alto rendimiento {tono[modo]}.
 
 Tu trabajo es analizar el día del usuario en función de SU OBJETIVO.
 
@@ -83,15 +85,15 @@ REGLAS IMPORTANTES:
 
 Responde en JSON válido con este formato:
 
-{
- "productividad_nivel": número del 1 al 10 según alineación con su objetivo,
- "error_principal": "explica el error usando ejemplos concretos del día o escribe 'ningún error relevante'",
- "accion_obligatoria_manana": "acción específica basada en el día y en su objetivo",
- "objetivo_manana": "objetivo claro, concreto y medible alineado con su objetivo principal",
- "analisis_semanal": "patrones detectados o 'aún no hay suficientes datos'",
- "identidad_actual": "define al usuario según su comportamiento real y su objetivo",
- "regla_clave": "regla práctica basada en lo que ha hecho (no genérica)"
-}
+{{
+ "productividad_nivel": 1-10,
+ "error_principal": "explica el error o 'ningún error relevante'",
+ "accion_obligatoria_manana": "acción concreta basada en el día",
+ "objetivo_manana": "objetivo claro y medible",
+ "analisis_semanal": "patrones o 'aún no hay suficientes datos'",
+ "identidad_actual": "definición basada en comportamiento real",
+ "regla_clave": "regla práctica basada en su caso"
+}}
 """
 
     url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
@@ -131,6 +133,7 @@ Responde en JSON válido con este formato:
 st.title("🧠 AI Habit System")
 
 objetivo = st.text_input("🎯 ¿Cuál es tu objetivo?")
+modo = st.selectbox("⚡ Modo de análisis", ["Suave", "Estándar", "Disciplina avanzada"])
 diario = st.text_area("✍️ Describe tu día")
 
 if st.button("🚀 Analizar día"):
@@ -139,7 +142,7 @@ if st.button("🚀 Analizar día"):
 
         if diario and objetivo:
 
-            resultado = analizar(diario, objetivo)
+            resultado = analizar(diario, objetivo, modo)
             fecha = datetime.date.today().isoformat()
             guardar_log(fecha, resultado)
 
