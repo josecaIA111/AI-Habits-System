@@ -96,7 +96,7 @@ Responde en JSON válido con este formato:
 }}
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-002:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={API_KEY}"
 
     payload = {
         "contents": [{
