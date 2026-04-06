@@ -96,7 +96,7 @@ Responde en JSON válido con este formato:
 }}
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-002:generateContent?key={API_KEY}"
 
     payload = {
         "contents": [{
@@ -105,7 +105,7 @@ Responde en JSON válido con este formato:
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=15)
+        response = requests.post(url, json=payload, timeout=20)
 
         if response.status_code != 200:
             return {"error_principal": f"Error API: {response.text}"}
