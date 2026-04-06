@@ -10,57 +10,23 @@ import requests
 st.set_page_config(page_title="AI Habit System", layout="wide")
 
 # -------------------------
-# 🎨 DISEÑO PRO
+# ESTILO PRO
 # -------------------------
 st.markdown("""
 <style>
-
 [data-testid="stAppViewContainer"] {
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
 }
-
-/* TITULO */
 h1 {
     text-align: center;
-    font-size: 42px;
-    font-weight: 700;
 }
-
-/* SUBTITULO */
-.subtitle {
-    text-align: center;
-    font-size: 18px;
-    opacity: 0.7;
-    margin-bottom: 20px;
-}
-
-/* TARJETAS */
 .card {
     background: #111827;
-    padding: 20px;
-    border-radius: 16px;
-    margin-bottom: 15px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
 }
-
-/* MÉTRICAS */
-.metric {
-    background: #020617;
-    padding: 25px;
-    border-radius: 14px;
-    text-align: center;
-    font-size: 18px;
-}
-
-/* BOTÓN */
-button {
-    background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
-    color: white !important;
-    border-radius: 12px !important;
-    height: 45px;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -87,47 +53,45 @@ def guardar_log(fecha, datos):
     with open(HISTORY_FILE, 'w') as f:
         json.dump(logs, f, indent=4)
 
-def calcular_racha():
-    data = obtener_historial()
-    fechas = sorted(data.keys(), reverse=True)
-    racha = 0
-    for fecha in fechas:
-        if data[fecha].get("productividad_nivel", 0) >= 7:
-            racha += 1
-        else:
-            break
-    return racha
-
 # -------------------------
-# IA (MEJORADA)
+# IA
 # -------------------------
-def analizar(diario, modo):
-
-    tono = {
-        "Suave": "amable y motivador",
-        "Estándar": "directo y útil",
-        "Disciplina avanzada": "duro, exigente y sin excusas"
-    }
+def analizar(diario, objetivo):
 
     prompt = f"""
-Eres un coach de alto rendimiento, {tono[modo]}.
+Eres un coach de alto rendimiento, directo, honesto y práctico.
 
-Responde SOLO en JSON válido.
+Tu trabajo es analizar el día del usuario en función de SU OBJETIVO.
 
-Formato:
+OBJETIVO DEL USUARIO:
+{objetivo}
 
-{{
- "productividad_nivel": 1-10,
- "error_principal": "texto claro",
- "accion_obligatoria_manana": "acción concreta",
- "objetivo_manana": "objetivo claro",
- "analisis_semanal": "patrones",
- "identidad_actual": "quién está siendo",
- "regla_clave": "regla simple"
-}}
-
-Día del usuario:
+DÍA DEL USUARIO:
 {diario}
+
+REGLAS IMPORTANTES:
+- PROHIBIDO dar consejos genéricos.
+- TODO debe basarse en cosas concretas que el usuario ha escrito.
+- Debes evaluar el día en función del objetivo del usuario.
+- Si el usuario menciona acciones (entrenar, trabajar, dormir, comer, etc.), debes referirte a ellas directamente.
+- Si el día es bueno y alineado con su objetivo, debes reconocerlo claramente.
+- Si el día es malo o mejorable, debes señalar errores concretos.
+- NO inventes fallos.
+- NO critiques si no hay errores claros.
+- Las recomendaciones deben ayudar directamente a su objetivo.
+- Sé claro, específico y útil.
+
+Responde en JSON válido con este formato:
+
+{
+ "productividad_nivel": número del 1 al 10 según alineación con su objetivo,
+ "error_principal": "explica el error usando ejemplos concretos del día o escribe 'ningún error relevante'",
+ "accion_obligatoria_manana": "acción específica basada en el día y en su objetivo",
+ "objetivo_manana": "objetivo claro, concreto y medible alineado con su objetivo principal",
+ "analisis_semanal": "patrones detectados o 'aún no hay suficientes datos'",
+ "identidad_actual": "define al usuario según su comportamiento real y su objetivo",
+ "regla_clave": "regla práctica basada en lo que ha hecho (no genérica)"
+}
 """
 
     url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={API_KEY}"
@@ -138,66 +102,57 @@ Día del usuario:
         }]
     }
 
-    response = requests.post(url, json=payload)
-    result = response.json()
-
     try:
+        response = requests.post(url, json=payload, timeout=15)
+
+        if response.status_code != 200:
+            return {"error_principal": f"Error API: {response.text}"}
+
+        result = response.json()
         text = result["candidates"][0]["content"]["parts"][0]["text"]
         text = text.replace("```json", "").replace("```", "").strip()
+
         return json.loads(text)
 
     except Exception as e:
         return {
             "productividad_nivel": 5,
-            "error_principal": "No estás siendo consistente",
-            "accion_obligatoria_manana": "Haz lo importante sin pensar",
-            "objetivo_manana": "Cumplir sin excusas",
-            "analisis_semanal": text if 'text' in locals() else "",
-            "identidad_actual": "Alguien con potencial pero sin ejecutar",
-            "regla_clave": "Primero ejecuta, luego piensa"
+            "error_principal": f"Error: {e}",
+            "accion_obligatoria_manana": "Reintentar",
+            "objetivo_manana": "Ser consistente",
+            "analisis_semanal": "",
+            "identidad_actual": "",
+            "regla_clave": ""
         }
 
 # -------------------------
 # UI
 # -------------------------
 st.title("🧠 AI Habit System")
-st.markdown('<div class="subtitle">Disciplina diaria. Feedback real. Sin excusas.</div>', unsafe_allow_html=True)
 
-modo = st.selectbox("🎛️ Modo de entrenamiento", ["Suave", "Estándar", "Disciplina avanzada"])
-
+objetivo = st.text_input("🎯 ¿Cuál es tu objetivo?")
 diario = st.text_area("✍️ Describe tu día")
 
 if st.button("🚀 Analizar día"):
 
-    if diario:
-        resultado = analizar(diario, modo)
-        fecha = datetime.date.today().isoformat()
-        guardar_log(fecha, resultado)
+    with st.spinner("Analizando..."):
 
-        score = resultado.get("productividad_nivel", 0)
-        racha = calcular_racha()
+        if diario and objetivo:
 
-        col1, col2 = st.columns(2)
-        col1.markdown(f'<div class="metric">🔥 Score<br><b>{score}</b></div>', unsafe_allow_html=True)
-        col2.markdown(f'<div class="metric">⚡ Racha<br><b>{racha}</b></div>', unsafe_allow_html=True)
+            resultado = analizar(diario, objetivo)
+            fecha = datetime.date.today().isoformat()
+            guardar_log(fecha, resultado)
 
-        st.divider()
-
-        st.markdown(f'<div class="card">⚠️ <b>Error principal</b><br>{resultado.get("error_principal")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📜 <b>Regla clave</b><br>{resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">✅ <b>Acción obligatoria</b><br>{resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">🎯 <b>Objetivo mañana</b><br>{resultado.get("objetivo_manana")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">🧬 <b>Identidad actual</b><br>{resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="card">📉 <b>Análisis</b><br>{resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">🔥 Score: {resultado.get("productividad_nivel")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">⚠️ Error: {resultado.get("error_principal")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">📜 Regla: {resultado.get("regla_clave")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">✅ Acción: {resultado.get("accion_obligatoria_manana")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">🎯 Objetivo: {resultado.get("objetivo_manana")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">🧬 Identidad: {resultado.get("identidad_actual")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="card">📉 Análisis: {resultado.get("analisis_semanal")}</div>', unsafe_allow_html=True)
 
 # -------------------------
-# PROGRESO
+# HISTORIAL
 # -------------------------
-if st.checkbox("📈 Ver progreso"):
-    data = obtener_historial()
-    if data:
-        df = pd.DataFrame(data).T
-        st.line_chart(df["productividad_nivel"])
-
 if st.checkbox("📂 Ver historial"):
     st.json(obtener_historial())
