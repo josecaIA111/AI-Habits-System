@@ -3,3 +3,4 @@ supabase==2.5.0
 gotrue==2.5.0
 requests==2.31.0
 pandas
+pillow==10.3.0
