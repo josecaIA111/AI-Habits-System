@@ -494,7 +494,7 @@ Responde ÚNICAMENTE en JSON válido con este esquema exacto:
 
     url = (
         "https://generativelanguage.googleapis.com/v1/models/"
-        f"gemini-2.0-flash:generateContent?key={GOOGLE_API_KEY}"
+        f"gemini-1.5-flash-002:generateContent?key={GOOGLE_API_KEY}"
     )
 
     try:
